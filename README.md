@@ -24,3 +24,5 @@ Compare performance of the following:
 
 1. Shapes described by GeoJSON, then rendered using d3
 2. Shapes described by TopoJSON, converted to geojson and then rendered by d3
+
+GeoJSON file is considerably larger, so sticking to TopoJSON. Should consider reducing details from TopoJSON, that can make the file even smaller
