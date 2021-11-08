@@ -1,9 +1,9 @@
-const census2011Reduced =
-  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSxyga50qbpNOzeccy52LyF696f6Nj66PAI7WWFLuzxI2QMmdF8Hvk5CfFjOTR0tsZOxKEhWfW7TXBR/pub?gid=7310244&single=true&output=csv'
+const census2011States =
+  'https://docs.google.com/spreadsheets/d/e/2PACX-1vSxyga50qbpNOzeccy52LyF696f6Nj66PAI7WWFLuzxI2QMmdF8Hvk5CfFjOTR0tsZOxKEhWfW7TXBR/pub?gid=778096512&single=true&output=csv'
 
 const topoJSON = './2011_india_states.topo.json'
 
-const dataPath = census2011Reduced
+const dataPath = census2011States
 const shapeJSONPath = topoJSON
 
 const district_code_field = 'District code'
@@ -20,10 +20,11 @@ Promise.all([d3.csv(dataPath), d3.json(shapeJSONPath)]).then(
     const shapeGeo = topojson.feature(shapeData, shapeData.objects.states)
 
     // Keys will be district codes
-    // const censusDataObj = {}
-    // censusData.forEach(dst => {
-    //   censusDataObj[dst[district_code_field]] = dst
-    // })
+    const censusDataObj = {}
+    censusData.forEach(s => {
+      censusDataObj[s.state.toLowerCase()] = s
+    })
+    // console.log(censusDataObj)
 
     const svg = d3.select('#chart-container').append('svg')
     svg.attr('width', 900).attr('height', 700)
@@ -32,7 +33,7 @@ Promise.all([d3.csv(dataPath), d3.json(shapeJSONPath)]).then(
     const colorScale = d3
       .scaleQuantile()
       .domain(colorDomain)
-      .range(d3.schemeRdBu[5])
+      .range(d3.schemeRdBu[9])
 
     const stateMesh = topojson.mesh(
       shapeData,
@@ -47,11 +48,21 @@ Promise.all([d3.csv(dataPath), d3.json(shapeJSONPath)]).then(
       .geoPath()
       .projection(d3.geoMercator().fitSize([900, 700], shapeGeo))
 
-    svg.append('g').selectAll('path').data(shapeGeo.features).join('path').attr(
-      'd',
-      // use fitSize to scale, transform shapes to take up the whole available space inside svg
-      path,
-    )
+    svg
+      .append('g')
+      .selectAll('path')
+      .data(shapeGeo.features)
+      .join('path')
+      .attr(
+        'd',
+        // use fitSize to scale, transform shapes to take up the whole available space inside svg
+        path,
+      )
+      .attr('fill', d => {
+        // console.log(d)
+        const state = d.properties.ST_NM.toLowerCase()
+        console.log(state, censusDataObj[state])
+      })
     // .attr('fill', d => {
     //   const code = d.properties.DT_CEN_CD
     //   const val = censusDataObj[code].sex_ratio
@@ -70,26 +81,6 @@ Promise.all([d3.csv(dataPath), d3.json(shapeJSONPath)]).then(
       .attr('pointer-events', 'none')
       .attr('fill', 'none')
       .attr('stroke', 'white')
-      // .attr("stroke-linecap", strokeLinecap)
-      // .attr("stroke-linejoin", strokeLinejoin)
-      // .attr("stroke-width", strokeWidth)
-      // .attr("stroke-opacity", strokeOpacity)
       .attr('d', path(stateMesh))
-    // .attr('stroke', '#333')
-    // .attr('stroke-width', d => {
-    //   const { DISTRICT, DT_CEN_CD, ST_NM } = d.properties
-    //   const {
-    //     [district_code_field]: district_code_from_data,
-    //     [district_name_field]: district_name_from_data,
-    //   } = censusDataObj[DT_CEN_CD]
-    //   // console.log(
-    //   //   `Shape: ${DISTRICT} ${ST_NM} (${DT_CEN_CD}) - Data: ${district_code_from_data}`,
-    //   // )
-    //   if (parseInt(DT_CEN_CD, 10) !== parseInt(district_code_from_data, 10)) {
-    //     console.log(
-    //       `Shape: ${DISTRICT} ${ST_NM} (${DT_CEN_CD}) - Data: (${district_code_from_data}) ${district_name_from_data}`,
-    //     )
-    //   }
-    // })
   },
 )
