@@ -48,46 +48,53 @@ Promise.all([
       'dom-tooltip absolute text-center bg-white rounded px-2 py-1 text-xs border capitalize',
     )
     .style('opacity', 0)
+    .html('.')
     .lower()
 
   const svg = d3.select('#chart-container').append('svg')
   svg.attr('width', svgWidth).attr('height', svgHeight)
 
-  // const srValues = censusData.map(d => parseFloat(d.sex_ratio))
-  // const srMid = 1000
-  // const [srMin, srMax] = d3.extent(srValues)
-  // const maxGap = d3.min([srMid - srMin, srMax - srMid])
-  // const srDomain = [1000 - maxGap, 1000 + maxGap]
+  const metricOptionList = ['sex ratio', 'literacy rate', 'population']
 
-  // const colorScale = d3.scaleSequential(d3.interpolateRdBu).domain(srDomain)
+  const metricValues = {}
 
-  const metricOptionList = ['sex_ratio', 'literacy', 'Population']
-  const colorSchemes = {
-    sex_ratio: d3.schemeRdBu[5],
-    literacy: d3.schemePuOr[9].slice().reverse(),
-    Population: d3.schemeSpectral[9].slice().reverse(),
+  metricOptionList.forEach(m => {
+    metricValues[m] = []
+  })
+
+  censusData.forEach(d => {
+    metricOptionList.forEach(m => {
+      d[m] = parseFloat(d[m])
+      metricValues[m].push(parseFloat(d[m]))
+    })
+  })
+
+  const srValues = metricValues['sex ratio']
+  const srMid = 1000
+  const [srMin, srMax] = d3.extent(srValues)
+  const maxGap = d3.min([srMid - srMin, srMax - srMid])
+  const srDomain = [1000 - maxGap, 1000 + maxGap]
+
+  const colorScaleSexRatio = d3
+    .scaleSequential(d3.interpolateRdBu)
+    .domain(srDomain)
+
+  const colorScales = {
+    'sex ratio': colorScaleSexRatio,
+
+    'literacy rate': d3
+      .scaleSequential(d3.interpolatePuOr)
+      .domain(d3.extent(metricValues['literacy rate']).slice().reverse()),
+
+    'population': d3
+      .scaleSequential(d3.interpolateSpectral)
+      .domain(d3.extent(metricValues['population']).slice().reverse()),
   }
-  const colorInterpolate = {
-    sex_ratio: d3.interpolateRdBu,
-    literacy: t => d3.interpolatePuOr(1 - t),
-    Population: d3.interpolateSpectral,
-  }
+
   // const metricOptionList = [{metric:'sex_ratio', colorScheme}, {metric:'literacy'}, {metric:'Population'}]
-  let metric = metricOptionList[1]
+  let metric = metricOptionList[0]
 
   const metricSelect = d3.select('body').append('select').lower()
-
-  const colorScheme = d3.interpolateRdBu
-
-  const metricValues = censusData.map(d => parseFloat(d[metric]))
-  const metricDomain = d3.extent(metricValues)
-  // const colorScale = d3
-  //   .scaleSequential(colorInterpolate[metric])
-  //   .domain(metricDomain)
-  const colorScale = d3
-    .scaleQuantile()
-    .domain(metricValues)
-    .range(colorSchemes[metric])
 
   const districtMesh = topojson.mesh(
     districtsShapeData,
@@ -111,8 +118,6 @@ Promise.all([
       d3.geoMercator().fitSize([svgWidth, svgHeight], districtsShapeGeo),
     )
 
-  console.log(censusDataObj)
-
   const districts = svg
     .append('g')
     .selectAll('path')
@@ -123,7 +128,7 @@ Promise.all([
       const code = d.properties.censuscode
 
       if (censusDataObj[code]) {
-        return colorScale(censusDataObj[code][metric])
+        return colorScaleSexRatio(censusDataObj[code][metric])
       } else {
         return 'gray'
       }
@@ -138,6 +143,10 @@ Promise.all([
         `(${censuscode}) ${district}/${DISTRICT}, ${ST_NM}: ${metric}: ${m}`,
       )
     })
+    .on('mouseout', () => {
+      tooltipDiv.transition().duration(200).style('opacity', 0)
+      tooltipDiv.html('.')
+    })
 
   metricSelect
     .selectAll('option')
@@ -147,19 +156,13 @@ Promise.all([
     .text(d => d)
 
   metricSelect.on('change', function (e, d) {
-    // console.log(e.target.value, d)
     metric = this.value
-
-    const mv = censusData.map(d => parseFloat(d[metric])).sort()
-    const md = d3.extent(mv)
-
-    const cs = d3.scaleSequential(colorInterpolate[metric]).domain(md)
 
     districts.attr('fill', d => {
       const code = d.properties.censuscode
 
       if (censusDataObj[code]) {
-        return cs(censusDataObj[code][metric])
+        return colorScales[metric](censusDataObj[code][metric])
       } else {
         return 'gray'
       }
@@ -170,7 +173,7 @@ Promise.all([
     .append('path')
     .attr('pointer-events', 'none')
     .attr('fill', 'none')
-    .attr('stroke', '#fefefe')
+    .attr('stroke', '#aaa')
     .attr('stroke-width', 0.5)
     .attr('d', path(districtMesh))
 
