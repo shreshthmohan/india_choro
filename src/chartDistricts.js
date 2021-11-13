@@ -4,13 +4,15 @@ const census2011DistrictsReduced =
 const census2011Districts =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vSxyga50qbpNOzeccy52LyF696f6Nj66PAI7WWFLuzxI2QMmdF8Hvk5CfFjOTR0tsZOxKEhWfW7TXBR/pub?gid=1967911996&single=true&output=csv'
 
+// const census2011DistrictsLocal = './data/india-districts-census-2011.csv'
+const census2011DistrictsLocal = './data/india-districts-census-2011_pc.csv'
+
 const census2011States =
   'https://docs.google.com/spreadsheets/d/e/2PACX-1vSxyga50qbpNOzeccy52LyF696f6Nj66PAI7WWFLuzxI2QMmdF8Hvk5CfFjOTR0tsZOxKEhWfW7TXBR/pub?gid=778096512&single=true&output=csv'
 
-const districtsTopoJSON = './2011_india_districts.topo.json'
-const statesTopoJSON = './2011_india_states.topo.json'
+const districtsTopoJSON = './2011_india_districts_states.topo.json'
 
-const dataPath = census2011Districts
+const dataPath = census2011DistrictsLocal
 
 const district_code_field = 'District code'
 const district_name_field = 'District name'
@@ -23,8 +25,8 @@ const censusDataObj = {}
 Promise.all([
   d3.csv(dataPath),
   d3.json(districtsTopoJSON),
-  d3.json(statesTopoJSON),
-]).then(([censusData, districtsShapeData, statesShapeData]) => {
+  // d3.json(statesTopoJSON),
+]).then(([censusData, districtsShapeData]) => {
   // 1. districtsShapeData is in topoJSON format
 
   // 2. Convert topoJSON to geoJSON (d3 needs geoJSON)
@@ -54,7 +56,22 @@ Promise.all([
   const svg = d3.select('#chart-container').append('svg')
   svg.attr('width', svgWidth).attr('height', svgHeight)
 
-  const metricOptionList = ['sex ratio', 'literacy rate', 'population']
+  const metricOptionList = [
+    'sex ratio',
+    'literacy rate',
+    'population',
+    'SC_percentage',
+    'ST_percentage',
+    'Hindus_percentage',
+    'Muslims_percentage',
+    'Christians_percentage',
+    'Sikhs_percentage',
+    'Buddhists_percentage',
+    'Jains_percentage',
+    'Others_Religions_percentage',
+    'Religion_Not_Stated_percentage',
+    'Workers_percentage',
+  ]
 
   const metricValues = {}
 
@@ -89,6 +106,50 @@ Promise.all([
     'population': d3
       .scaleSequential(d3.interpolateSpectral)
       .domain(d3.extent(metricValues['population']).slice().reverse()),
+
+    'SC_percentage': d3
+      .scaleSequential(d3.interpolateGreens)
+      .domain(d3.extent(metricValues['SC_percentage'])),
+
+    'ST_percentage': d3
+      .scaleSequential(d3.interpolateOranges)
+      .domain(d3.extent(metricValues['ST_percentage'])),
+
+    'Hindus_percentage': d3
+      .scaleSequential(d3.interpolateBlues)
+      .domain(d3.extent(metricValues['Hindus_percentage'])),
+    'Muslims_percentage': d3
+      .scaleSequential(d3.interpolateGreens)
+      .domain(d3.extent(metricValues['Muslims_percentage'])),
+
+    'Christians_percentage': d3
+      .scaleSequential(d3.interpolateBlues)
+      .domain(d3.extent(metricValues['Christians_percentage'])),
+
+    'Sikhs_percentage': d3
+      .scaleSequential(d3.interpolateBlues)
+      .domain(d3.extent(metricValues['Sikhs_percentage'])),
+
+    'Buddhists_percentage': d3
+      .scaleSequential(d3.interpolateGreys)
+      .domain(d3.extent(metricValues['Buddhists_percentage'])),
+
+    'Jains_percentage': d3
+      .scaleSequential(d3.interpolatePurples)
+      .domain(d3.extent(metricValues['Jains_percentage'])),
+
+    'Others_Religions_percentage': d3
+      .scaleSequential(d3.interpolateOranges)
+      .domain(d3.extent(metricValues['Others_Religions_percentage'])),
+
+    'Religion_Not_Stated_percentage': d3
+      .scaleSequential(d3.interpolateOranges)
+      .domain(d3.extent(metricValues['Religion_Not_Stated_percentage'])),
+
+    // 'Jains_percentage',
+    // 'Others_Religions_percentage',
+    // 'Religion_Not_Stated_percentage',
+    // 'Workers_percentage',
   }
 
   // const metricOptionList = [{metric:'sex_ratio', colorScheme}, {metric:'literacy'}, {metric:'Population'}]
@@ -106,9 +167,9 @@ Promise.all([
   )
 
   const stateMesh = topojson.mesh(
-    statesShapeData,
-    statesShapeData.objects.states,
-    (a, b) => a == b,
+    districtsShapeData,
+    districtsShapeData.objects.states,
+    // (a, b) => a !== b,
   )
 
   const path = d3
@@ -117,6 +178,16 @@ Promise.all([
     .projection(
       d3.geoMercator().fitSize([svgWidth, svgHeight], districtsShapeGeo),
     )
+
+  // const statesShapeGeo = topojson.feature(
+  //   statesShapeData,
+  //   statesShapeData.objects.states,
+  // )
+
+  // const pathState = d3
+  //   .geoPath()
+  //   // use fitSize to scale, transform shapes to take up the whole available space inside svg
+  //   .projection(d3.geoMercator().fitSize([svgWidth, svgHeight], statesShapeGeo))
 
   const districts = svg
     .append('g')
@@ -169,13 +240,13 @@ Promise.all([
     })
   })
 
-  svg
-    .append('path')
-    .attr('pointer-events', 'none')
-    .attr('fill', 'none')
-    .attr('stroke', '#aaa')
-    .attr('stroke-width', 0.5)
-    .attr('d', path(districtMesh))
+  // svg
+  //   .append('path')
+  //   .attr('pointer-events', 'none')
+  //   .attr('fill', 'none')
+  //   .attr('stroke', '#aaa')
+  //   .attr('stroke-width', 0.5)
+  //   .attr('d', path(districtMesh))
 
   svg
     .append('path')

@@ -133,6 +133,26 @@ const numberColumns = [
   'Total_Power_Parity',
 ]
 
+const ratioByPopulationList = [
+  'SC',
+  'ST',
+  'Workers',
+  'Hindus',
+  'Muslims',
+  'Christians',
+  'Sikhs',
+  'Buddhists',
+  'Jains',
+  'Others_Religions',
+  'Religion_Not_Stated',
+]
+
+dataByDistrict.forEach(d => {
+  ratioByPopulationList.forEach(m => {
+    d[m + '_percentage'] = d[m] / d['Population']
+  })
+})
+
 const dataByState = {}
 dataByDistrict.forEach(d => {
   const state = d[stateNameField]
@@ -155,9 +175,17 @@ Object.keys(dataByState).forEach(s => {
   dataByStateArr.push({ state: s, ...dataByState[s] })
 })
 
+const dataByDistrictArr = []
+
+Object.keys(dataByDistrict).forEach(d => {
+  dataByDistrictArr.push({ ...dataByDistrict[d] })
+})
+
 // console.log(dataByStateArr)
 
 const unparsedDataByState = unparse(dataByStateArr)
+const unparsedDataByDistrict = unparse(dataByDistrictArr)
 // console.log(unparsedDataByState)
 
-fs.writeFileSync('india-states-census-2011.csv', unparsedDataByState)
+// fs.writeFileSync('india-states-census-2011.csv', unparsedDataByState)
+fs.writeFileSync('india-districts-census-2011_pc.csv', unparsedDataByDistrict)

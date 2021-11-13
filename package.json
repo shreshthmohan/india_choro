@@ -5,7 +5,12 @@
   "repository": "git@github.com:shreshthmohan/india_choro.git",
   "author": "Shreshth Mohan <sremog@gmail.com>",
   "license": "MIT",
+  "scripts": {
+    "mergeDistricts": "topomerge states=2011_Dist -k 'd.properties.ST_NM' < src/2011_india_districts.topo.json > src/2011_india_districts_states.topo.json"
+  },
   "dependencies": {
-    "papaparse": "^5.3.1"
+    "papaparse": "^5.3.1",
+    "topojson": "^3.0.2",
+    "topojson-client": "^3.1.0"
   }
 }
