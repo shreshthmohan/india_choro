@@ -50,20 +50,18 @@ d3.select(document)
     }
   })
 
-Promise.all([
-  d3.csv(dataPath),
-  d3.json(districtsTopoJSON),
-  // d3.json(statesTopoJSON),
-])
+Promise.all([d3.csv(dataPath), d3.json(districtsTopoJSON)])
   .then(([censusData, districtsShapeData]) => {
     loadingIndicator.remove()
-    // 1. districtsShapeData is in topoJSON format
 
-    // 2. Convert topoJSON to geoJSON (d3 needs geoJSON)
+    // districtsShapeData is in topoJSON format
+    // Convert topoJSON to geoJSON (d3 needs geoJSON)
     const districtsShapeGeo = topojson.feature(
       districtsShapeData,
       districtsShapeData.objects['2011_Dist'],
     )
+    // districtsShapeGeo is in geoJSON format
+
     // Keys will be district codes
     censusData.forEach(dst => {
       censusDataObj[dst[district_code_field]] = dst
@@ -134,10 +132,11 @@ Promise.all([
       'Workers_percentage',
     ]
 
+    //
     const formats = {
-      'sex ratio': '.3r',
-      'literacy rate': '.3p',
-      'Population': '',
+      'sex ratio': '.5r', // round off to 5 significant digits
+      'literacy rate': '.3p', // percentage, 3 significat digits (value is between 0 and 1, where 1 means 100%)
+      'Population': '', // no format
       'SC_percentage': '.3p',
       'ST_percentage': '.3p',
       'Hindus_percentage': '.3p',
@@ -157,6 +156,7 @@ Promise.all([
       metricValues[m] = []
     })
 
+    // Convert string data to float
     censusData.forEach(d => {
       metricOptionList.forEach(m => {
         d[m] = parseFloat(d[m])
@@ -164,6 +164,8 @@ Promise.all([
       })
     })
 
+    // Special case, calculate color scale such that
+    // central color (white) corresponds to balanced sex ratio of 1000
     const srValues = metricValues['sex ratio']
     const srMid = 1000
     const [srMin, srMax] = d3.extent(srValues)
@@ -177,6 +179,9 @@ Promise.all([
     const colorScales = {
       'sex ratio': colorScaleSexRatio,
 
+      // d3.extent calculate minimum and maximum values of that metric
+      // reverse: if purple is high which means it's good
+      // slice: is to copy the array without changing the original array
       'literacy rate': d3
         .scaleSequential(d3.interpolatePuOr)
         .domain(d3.extent(metricValues['literacy rate']).slice().reverse()),
@@ -209,7 +214,7 @@ Promise.all([
         .domain(d3.extent(metricValues['Sikhs_percentage'])),
 
       'Buddhists_percentage': d3
-        .scaleSequential(d3.interpolateGreys)
+        .scaleSequential(d3.interpolateOranges)
         .domain(d3.extent(metricValues['Buddhists_percentage'])),
 
       'Jains_percentage': d3
@@ -229,14 +234,14 @@ Promise.all([
         .domain(d3.extent(metricValues['Workers_percentage'])),
     }
 
+    // overlay descriptions for each metric
     const descriptions = {
-      'default': 'Description not provided',
       'sex ratio':
         'Number of females per 1000 female. White represents 1000, i.e. a balanced sex ratio.',
       'Population': 'population description',
     }
 
-    // const metricOptionList = [{metric:'sex_ratio', colorScheme}, {metric:'literacy'}, {metric:'Population'}]
+    // default value selected is first element in the metricOptionsList array (sex ratio)
     let metric = metricOptionList[0]
 
     const metricSelect = widgetsLeft
@@ -244,19 +249,24 @@ Promise.all([
       // .attr('style', 'font-size: 20px')
       .lower()
 
-    const districtMesh = topojson.mesh(
-      districtsShapeData,
-      districtsShapeData.objects['2011_Dist'],
-      // internal boundaries
-      // (a, b) => a !== b,
-      // external boundaries
-      // (a, b) => a == b,
-    )
+    // const districtMesh = topojson.mesh(
+    //   districtsShapeData,
+    //   districtsShapeData.objects['2011_Dist'],
+    //   // internal boundaries
+    //   // (a, b) => a !== b,
+    //   // external boundaries
+    //   // (a, b) => a == b,
+    // )
 
+    // create a mesh using topojson to mark state boundaries
     const stateMesh = topojson.mesh(
       districtsShapeData,
       districtsShapeData.objects.states,
+      // internal boundaries
       // (a, b) => a !== b,
+      // external boundaries
+      // (a, b) => a !== b,
+      // all boundaries will be show if you don't provide a filter function
     )
 
     const path = d3
@@ -264,19 +274,10 @@ Promise.all([
       // use fitSize to scale, transform shapes to take up the whole available space inside svg
       .projection(
         d3
+          // projection: mercator
           .geoMercator()
           .fitSize([viewBoxWidth, viewBoxHeight], districtsShapeGeo),
       )
-
-    // const statesShapeGeo = topojson.feature(
-    //   statesShapeData,
-    //   statesShapeData.objects.states,
-    // )
-
-    // const pathState = d3
-    //   .geoPath()
-    //   // use fitSize to scale, transform shapes to take up the whole available space inside svg
-    //   .projection(d3.geoMercator().fitSize([svgWidth, svgHeight], statesShapeGeo))
 
     const districts = svg
       .append('g')
@@ -284,11 +285,12 @@ Promise.all([
       .data(districtsShapeGeo.features)
       .join('path')
       .attr('d', path)
+      // fill color inside district shape
       .attr('fill', d => {
         const code = d.properties.censuscode
 
         if (censusDataObj[code]) {
-          return colorScaleSexRatio(censusDataObj[code][metric])
+          return colorScales[metric](censusDataObj[code][metric])
         } else {
           return 'gray'
         }
@@ -309,24 +311,36 @@ Promise.all([
         } else {
           tooltipDiv.html(`${DISTRICT} <br/> No data available.`)
         }
+
+        // Outline
+        // Raise so that outline is not hidden behind neighbouring shapes
         d3.select(this).attr('stroke', '#333').attr('stroke-width', 2).raise()
       })
       .on('mouseout', function () {
+        // hide tooltip
         tooltipDiv.transition().duration(200).style('opacity', 0)
+
+        // remove outline
         d3.select(this).attr('stroke-width', 0)
       })
 
+    // add <option>s to the <select> tag based on items in metricOptionList array
     metricSelect
       .selectAll('option')
       .data(metricOptionList)
       .join('option')
       .attr('value', d => d)
       .text(d => d)
+
+    // add description to overlay <p> based on selected metric
     overlay.select('p').html(descriptions[metric])
 
+    // overlay is initially hidden
+    // show overlay and overlay wrapper
     overlay.style('display', 'block')
     overlayWrapper.style('display', 'block')
 
+    // when you select a different <option>
     metricSelect.on('change', function (e, d) {
       metric = this.value
 
@@ -340,6 +354,7 @@ Promise.all([
         }
       })
 
+      // show description for metric only if it exists in descriptions object
       if (descriptions[metric]) {
         overlay.select('p').html(descriptions[metric])
 
@@ -347,14 +362,6 @@ Promise.all([
         overlayWrapper.style('display', 'block')
       }
     })
-
-    // svg
-    //   .append('path')
-    //   .attr('pointer-events', 'none')
-    //   .attr('fill', 'none')
-    //   .attr('stroke', '#aaa')
-    //   .attr('stroke-width', 0.5)
-    //   .attr('d', path(districtMesh))
 
     svg
       .append('path')
