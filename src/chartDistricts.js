@@ -22,11 +22,17 @@ const district_name_field = 'District name'
 
 const censusDataObj = {}
 
+const loadingIndicator = d3
+  .select('#chart-container')
+  .append('div')
+  .html('Loading data...')
+
 Promise.all([
   d3.csv(dataPath),
   d3.json(districtsTopoJSON),
   // d3.json(statesTopoJSON),
 ]).then(([censusData, districtsShapeData]) => {
+  loadingIndicator.remove()
   // 1. districtsShapeData is in topoJSON format
 
   // 2. Convert topoJSON to geoJSON (d3 needs geoJSON)
@@ -39,17 +45,15 @@ Promise.all([
     censusDataObj[dst[district_code_field]] = dst
   })
 
-  const svgWidth = 630
-  const svgHeight = 700
-
   const chartContainer = d3.select('#chart-container')
   chartContainer.style('position', 'relative')
   const tooltipDiv = chartContainer
     .append('div')
     .attr(
       'style',
-      'position: absolute; opacity: 0; top: 8px; right: 8px; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white; text-transform: capitalize',
+      'position: absolute;  top: 8px; right: 8px; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white; text-transform: capitalize',
     )
+    .html('Hover on a district to see its data')
 
   const marginTop = 0
   const marginRight = 0
@@ -236,12 +240,17 @@ Promise.all([
     .on('mouseover', function (e, d) {
       const { DISTRICT, censuscode, ST_NM } = d.properties
 
-      const { [metric]: m, 'District name': district } =
-        censusDataObj[censuscode]
       tooltipDiv.transition().duration(200).style('opacity', 1)
-      // ${district}/
-      tooltipDiv.html(`${DISTRICT}, ${ST_NM} <br/> ${metric}: ${m}`)
-
+      if (censusDataObj[censuscode]) {
+        const { [metric]: m, 'District name': district } =
+          censusDataObj[censuscode]
+        // ${district}/
+        tooltipDiv.html(
+          `${DISTRICT}, ${ST_NM} <br/> ${metric}: ${d3.format('.3r')(m)}`,
+        )
+      } else {
+        tooltipDiv.html(`${DISTRICT} <br/> No data available.`)
+      }
       d3.select(this).attr('stroke', '#333').attr('stroke-width', 2).raise()
     })
     .on('mouseout', function () {
