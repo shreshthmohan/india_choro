@@ -59,7 +59,7 @@ Promise.all([
   const metricOptionList = [
     'sex ratio',
     'literacy rate',
-    'population',
+    'Population',
     'SC_percentage',
     'ST_percentage',
     'Hindus_percentage',
@@ -103,9 +103,9 @@ Promise.all([
       .scaleSequential(d3.interpolatePuOr)
       .domain(d3.extent(metricValues['literacy rate']).slice().reverse()),
 
-    'population': d3
+    'Population': d3
       .scaleSequential(d3.interpolateSpectral)
-      .domain(d3.extent(metricValues['population']).slice().reverse()),
+      .domain(d3.extent(metricValues['Population']).slice().reverse()),
 
     'SC_percentage': d3
       .scaleSequential(d3.interpolateGreens)
@@ -146,10 +146,9 @@ Promise.all([
       .scaleSequential(d3.interpolateOranges)
       .domain(d3.extent(metricValues['Religion_Not_Stated_percentage'])),
 
-    // 'Jains_percentage',
-    // 'Others_Religions_percentage',
-    // 'Religion_Not_Stated_percentage',
-    // 'Workers_percentage',
+    'Workers_percentage': d3
+      .scaleSequential(d3.interpolateBuGn)
+      .domain(d3.extent(metricValues['Religion_Not_Stated_percentage'])),
   }
 
   // const metricOptionList = [{metric:'sex_ratio', colorScheme}, {metric:'literacy'}, {metric:'Population'}]
