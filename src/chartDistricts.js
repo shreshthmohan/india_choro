@@ -134,6 +134,23 @@ Promise.all([
       'Workers_percentage',
     ]
 
+    const formats = {
+      'sex ratio': '.3r',
+      'literacy rate': '.3p',
+      'Population': '',
+      'SC_percentage': '.3p',
+      'ST_percentage': '.3p',
+      'Hindus_percentage': '.3p',
+      'Muslims_percentage': '.3p',
+      'Christians_percentage': '.3p',
+      'Sikhs_percentage': '.3p',
+      'Buddhists_percentage': '.3p',
+      'Jains_percentage': '.3p',
+      'Others_Religions_percentage': '.3p',
+      'Religion_Not_Stated_percentage': '.3p',
+      'Workers_percentage': '.3p',
+    }
+
     const metricValues = {}
 
     metricOptionList.forEach(m => {
@@ -285,7 +302,9 @@ Promise.all([
             censusDataObj[censuscode]
           // ${district}/
           tooltipDiv.html(
-            `${DISTRICT}, ${ST_NM} <br/> ${metric}: ${d3.format('.3r')(m)}`,
+            `${DISTRICT}, ${ST_NM} <br/> ${metric}: ${d3.format(
+              formats[metric],
+            )(m)}`,
           )
         } else {
           tooltipDiv.html(`${DISTRICT} <br/> No data available.`)
