@@ -31,267 +31,271 @@ Promise.all([
   d3.csv(dataPath),
   d3.json(districtsTopoJSON),
   // d3.json(statesTopoJSON),
-]).then(([censusData, districtsShapeData]) => {
-  loadingIndicator.remove()
-  // 1. districtsShapeData is in topoJSON format
+])
+  .then(([censusData, districtsShapeData]) => {
+    loadingIndicator.remove()
+    // 1. districtsShapeData is in topoJSON format
 
-  // 2. Convert topoJSON to geoJSON (d3 needs geoJSON)
-  const districtsShapeGeo = topojson.feature(
-    districtsShapeData,
-    districtsShapeData.objects['2011_Dist'],
-  )
-  // Keys will be district codes
-  censusData.forEach(dst => {
-    censusDataObj[dst[district_code_field]] = dst
-  })
-
-  const chartContainer = d3.select('#chart-container')
-  chartContainer.style('position', 'relative')
-  const tooltipDiv = chartContainer
-    .append('div')
-    .attr(
-      'style',
-      'position: absolute;  top: 8px; right: 8px; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white; text-transform: capitalize',
+    // 2. Convert topoJSON to geoJSON (d3 needs geoJSON)
+    const districtsShapeGeo = topojson.feature(
+      districtsShapeData,
+      districtsShapeData.objects['2011_Dist'],
     )
-    .html('Hover on a district to see its data')
+    // Keys will be district codes
+    censusData.forEach(dst => {
+      censusDataObj[dst[district_code_field]] = dst
+    })
 
-  const marginTop = 0
-  const marginRight = 0
-  const marginBottom = 0
-  const marginLeft = 0
+    const chartContainer = d3.select('#chart-container')
+    chartContainer.style('position', 'relative')
+    const tooltipDiv = chartContainer
+      .append('div')
+      .attr(
+        'style',
+        'position: absolute;  top: 8px; right: 8px; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white; text-transform: capitalize',
+      )
+      .html('Hover on a district to see its data')
 
-  const aspectRatio = 9 / 10
+    const marginTop = 0
+    const marginRight = 0
+    const marginBottom = 0
+    const marginLeft = 0
 
-  const coreChartWidth = 1000
+    const aspectRatio = 9 / 10
 
-  const coreChartHeight = coreChartWidth / aspectRatio
+    const coreChartWidth = 1000
 
-  const viewBoxHeight = coreChartHeight + marginTop + marginBottom
-  const viewBoxWidth = coreChartWidth + marginLeft + marginRight
+    const coreChartHeight = coreChartWidth / aspectRatio
 
-  // .style('background', bgColor)
+    const viewBoxHeight = coreChartHeight + marginTop + marginBottom
+    const viewBoxWidth = coreChartWidth + marginLeft + marginRight
 
-  const widgets = chartContainer
-    .append('div')
-    .attr(
-      'style',
-      'display: flex; justify-content: space-between; padding-bottom: 1rem;',
-    )
-  const widgetsLeft = widgets
-    .append('div')
-    .attr('style', 'display: flex; align-items: end; column-gap: 5px;')
+    // .style('background', bgColor)
 
-  const svg = chartContainer
-    .append('svg')
-    .attr('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`)
+    const widgets = chartContainer
+      .append('div')
+      .attr(
+        'style',
+        'display: flex; justify-content: space-between; padding-bottom: 1rem;',
+      )
+    const widgetsLeft = widgets
+      .append('div')
+      .attr('style', 'display: flex; align-items: end; column-gap: 5px;')
 
-  const metricOptionList = [
-    'sex ratio',
-    'literacy rate',
-    'Population',
-    'SC_percentage',
-    'ST_percentage',
-    'Hindus_percentage',
-    'Muslims_percentage',
-    'Christians_percentage',
-    'Sikhs_percentage',
-    'Buddhists_percentage',
-    'Jains_percentage',
-    'Others_Religions_percentage',
-    'Religion_Not_Stated_percentage',
-    'Workers_percentage',
-  ]
+    const svg = chartContainer
+      .append('svg')
+      .attr('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`)
 
-  const metricValues = {}
+    const metricOptionList = [
+      'sex ratio',
+      'literacy rate',
+      'Population',
+      'SC_percentage',
+      'ST_percentage',
+      'Hindus_percentage',
+      'Muslims_percentage',
+      'Christians_percentage',
+      'Sikhs_percentage',
+      'Buddhists_percentage',
+      'Jains_percentage',
+      'Others_Religions_percentage',
+      'Religion_Not_Stated_percentage',
+      'Workers_percentage',
+    ]
 
-  metricOptionList.forEach(m => {
-    metricValues[m] = []
-  })
+    const metricValues = {}
 
-  censusData.forEach(d => {
     metricOptionList.forEach(m => {
-      d[m] = parseFloat(d[m])
-      metricValues[m].push(parseFloat(d[m]))
+      metricValues[m] = []
     })
-  })
 
-  const srValues = metricValues['sex ratio']
-  const srMid = 1000
-  const [srMin, srMax] = d3.extent(srValues)
-  const maxGap = d3.min([srMid - srMin, srMax - srMid])
-  const srDomain = [1000 - maxGap, 1000 + maxGap]
+    censusData.forEach(d => {
+      metricOptionList.forEach(m => {
+        d[m] = parseFloat(d[m])
+        metricValues[m].push(parseFloat(d[m]))
+      })
+    })
 
-  const colorScaleSexRatio = d3
-    .scaleSequential(d3.interpolateRdBu)
-    .domain(srDomain)
+    const srValues = metricValues['sex ratio']
+    const srMid = 1000
+    const [srMin, srMax] = d3.extent(srValues)
+    const maxGap = d3.min([srMid - srMin, srMax - srMid])
+    const srDomain = [1000 - maxGap, 1000 + maxGap]
 
-  const colorScales = {
-    'sex ratio': colorScaleSexRatio,
+    const colorScaleSexRatio = d3
+      .scaleSequential(d3.interpolateRdBu)
+      .domain(srDomain)
 
-    'literacy rate': d3
-      .scaleSequential(d3.interpolatePuOr)
-      .domain(d3.extent(metricValues['literacy rate']).slice().reverse()),
+    const colorScales = {
+      'sex ratio': colorScaleSexRatio,
 
-    'Population': d3
-      .scaleSequential(d3.interpolateSpectral)
-      .domain(d3.extent(metricValues['Population']).slice().reverse()),
+      'literacy rate': d3
+        .scaleSequential(d3.interpolatePuOr)
+        .domain(d3.extent(metricValues['literacy rate']).slice().reverse()),
 
-    'SC_percentage': d3
-      .scaleSequential(d3.interpolateGreens)
-      .domain(d3.extent(metricValues['SC_percentage'])),
+      'Population': d3
+        .scaleSequential(d3.interpolateSpectral)
+        .domain(d3.extent(metricValues['Population']).slice().reverse()),
 
-    'ST_percentage': d3
-      .scaleSequential(d3.interpolateOranges)
-      .domain(d3.extent(metricValues['ST_percentage'])),
+      'SC_percentage': d3
+        .scaleSequential(d3.interpolateGreens)
+        .domain(d3.extent(metricValues['SC_percentage'])),
 
-    'Hindus_percentage': d3
-      .scaleSequential(d3.interpolateBlues)
-      .domain(d3.extent(metricValues['Hindus_percentage'])),
-    'Muslims_percentage': d3
-      .scaleSequential(d3.interpolateGreens)
-      .domain(d3.extent(metricValues['Muslims_percentage'])),
+      'ST_percentage': d3
+        .scaleSequential(d3.interpolateOranges)
+        .domain(d3.extent(metricValues['ST_percentage'])),
 
-    'Christians_percentage': d3
-      .scaleSequential(d3.interpolateBlues)
-      .domain(d3.extent(metricValues['Christians_percentage'])),
+      'Hindus_percentage': d3
+        .scaleSequential(d3.interpolateBlues)
+        .domain(d3.extent(metricValues['Hindus_percentage'])),
+      'Muslims_percentage': d3
+        .scaleSequential(d3.interpolateGreens)
+        .domain(d3.extent(metricValues['Muslims_percentage'])),
 
-    'Sikhs_percentage': d3
-      .scaleSequential(d3.interpolateBlues)
-      .domain(d3.extent(metricValues['Sikhs_percentage'])),
+      'Christians_percentage': d3
+        .scaleSequential(d3.interpolateBlues)
+        .domain(d3.extent(metricValues['Christians_percentage'])),
 
-    'Buddhists_percentage': d3
-      .scaleSequential(d3.interpolateGreys)
-      .domain(d3.extent(metricValues['Buddhists_percentage'])),
+      'Sikhs_percentage': d3
+        .scaleSequential(d3.interpolateBlues)
+        .domain(d3.extent(metricValues['Sikhs_percentage'])),
 
-    'Jains_percentage': d3
-      .scaleSequential(d3.interpolatePurples)
-      .domain(d3.extent(metricValues['Jains_percentage'])),
+      'Buddhists_percentage': d3
+        .scaleSequential(d3.interpolateGreys)
+        .domain(d3.extent(metricValues['Buddhists_percentage'])),
 
-    'Others_Religions_percentage': d3
-      .scaleSequential(d3.interpolateOranges)
-      .domain(d3.extent(metricValues['Others_Religions_percentage'])),
+      'Jains_percentage': d3
+        .scaleSequential(d3.interpolatePurples)
+        .domain(d3.extent(metricValues['Jains_percentage'])),
 
-    'Religion_Not_Stated_percentage': d3
-      .scaleSequential(d3.interpolateOranges)
-      .domain(d3.extent(metricValues['Religion_Not_Stated_percentage'])),
+      'Others_Religions_percentage': d3
+        .scaleSequential(d3.interpolateOranges)
+        .domain(d3.extent(metricValues['Others_Religions_percentage'])),
 
-    'Workers_percentage': d3
-      .scaleSequential(d3.interpolateBuGn)
-      .domain(d3.extent(metricValues['Workers_percentage'])),
-  }
+      'Religion_Not_Stated_percentage': d3
+        .scaleSequential(d3.interpolateOranges)
+        .domain(d3.extent(metricValues['Religion_Not_Stated_percentage'])),
 
-  // const metricOptionList = [{metric:'sex_ratio', colorScheme}, {metric:'literacy'}, {metric:'Population'}]
-  let metric = metricOptionList[0]
+      'Workers_percentage': d3
+        .scaleSequential(d3.interpolateBuGn)
+        .domain(d3.extent(metricValues['Workers_percentage'])),
+    }
 
-  const metricSelect = widgetsLeft
-    .append('select')
-    // .attr('style', 'font-size: 20px')
-    .lower()
+    // const metricOptionList = [{metric:'sex_ratio', colorScheme}, {metric:'literacy'}, {metric:'Population'}]
+    let metric = metricOptionList[0]
 
-  const districtMesh = topojson.mesh(
-    districtsShapeData,
-    districtsShapeData.objects['2011_Dist'],
-    // internal boundaries
-    // (a, b) => a !== b,
-    // external boundaries
-    // (a, b) => a == b,
-  )
+    const metricSelect = widgetsLeft
+      .append('select')
+      // .attr('style', 'font-size: 20px')
+      .lower()
 
-  const stateMesh = topojson.mesh(
-    districtsShapeData,
-    districtsShapeData.objects.states,
-    // (a, b) => a !== b,
-  )
-
-  const path = d3
-    .geoPath()
-    // use fitSize to scale, transform shapes to take up the whole available space inside svg
-    .projection(
-      d3
-        .geoMercator()
-        .fitSize([viewBoxWidth, viewBoxHeight], districtsShapeGeo),
+    const districtMesh = topojson.mesh(
+      districtsShapeData,
+      districtsShapeData.objects['2011_Dist'],
+      // internal boundaries
+      // (a, b) => a !== b,
+      // external boundaries
+      // (a, b) => a == b,
     )
 
-  // const statesShapeGeo = topojson.feature(
-  //   statesShapeData,
-  //   statesShapeData.objects.states,
-  // )
+    const stateMesh = topojson.mesh(
+      districtsShapeData,
+      districtsShapeData.objects.states,
+      // (a, b) => a !== b,
+    )
 
-  // const pathState = d3
-  //   .geoPath()
-  //   // use fitSize to scale, transform shapes to take up the whole available space inside svg
-  //   .projection(d3.geoMercator().fitSize([svgWidth, svgHeight], statesShapeGeo))
+    const path = d3
+      .geoPath()
+      // use fitSize to scale, transform shapes to take up the whole available space inside svg
+      .projection(
+        d3
+          .geoMercator()
+          .fitSize([viewBoxWidth, viewBoxHeight], districtsShapeGeo),
+      )
 
-  const districts = svg
-    .append('g')
-    .selectAll('path')
-    .data(districtsShapeGeo.features)
-    .join('path')
-    .attr('d', path)
-    .attr('fill', d => {
-      const code = d.properties.censuscode
+    // const statesShapeGeo = topojson.feature(
+    //   statesShapeData,
+    //   statesShapeData.objects.states,
+    // )
 
-      if (censusDataObj[code]) {
-        return colorScaleSexRatio(censusDataObj[code][metric])
-      } else {
-        return 'gray'
-      }
+    // const pathState = d3
+    //   .geoPath()
+    //   // use fitSize to scale, transform shapes to take up the whole available space inside svg
+    //   .projection(d3.geoMercator().fitSize([svgWidth, svgHeight], statesShapeGeo))
+
+    const districts = svg
+      .append('g')
+      .selectAll('path')
+      .data(districtsShapeGeo.features)
+      .join('path')
+      .attr('d', path)
+      .attr('fill', d => {
+        const code = d.properties.censuscode
+
+        if (censusDataObj[code]) {
+          return colorScaleSexRatio(censusDataObj[code][metric])
+        } else {
+          return 'gray'
+        }
+      })
+      .on('mouseover', function (e, d) {
+        const { DISTRICT, censuscode, ST_NM } = d.properties
+
+        tooltipDiv.transition().duration(200).style('opacity', 1)
+        if (censusDataObj[censuscode]) {
+          const { [metric]: m, 'District name': district } =
+            censusDataObj[censuscode]
+          // ${district}/
+          tooltipDiv.html(
+            `${DISTRICT}, ${ST_NM} <br/> ${metric}: ${d3.format('.3r')(m)}`,
+          )
+        } else {
+          tooltipDiv.html(`${DISTRICT} <br/> No data available.`)
+        }
+        d3.select(this).attr('stroke', '#333').attr('stroke-width', 2).raise()
+      })
+      .on('mouseout', function () {
+        tooltipDiv.transition().duration(200).style('opacity', 0)
+        d3.select(this).attr('stroke-width', 0)
+      })
+
+    metricSelect
+      .selectAll('option')
+      .data(metricOptionList)
+      .join('option')
+      .attr('value', d => d)
+      .text(d => d)
+
+    metricSelect.on('change', function (e, d) {
+      metric = this.value
+
+      districts.attr('fill', d => {
+        const code = d.properties.censuscode
+
+        if (censusDataObj[code]) {
+          return colorScales[metric](censusDataObj[code][metric])
+        } else {
+          return 'gray'
+        }
+      })
     })
-    .on('mouseover', function (e, d) {
-      const { DISTRICT, censuscode, ST_NM } = d.properties
 
-      tooltipDiv.transition().duration(200).style('opacity', 1)
-      if (censusDataObj[censuscode]) {
-        const { [metric]: m, 'District name': district } =
-          censusDataObj[censuscode]
-        // ${district}/
-        tooltipDiv.html(
-          `${DISTRICT}, ${ST_NM} <br/> ${metric}: ${d3.format('.3r')(m)}`,
-        )
-      } else {
-        tooltipDiv.html(`${DISTRICT} <br/> No data available.`)
-      }
-      d3.select(this).attr('stroke', '#333').attr('stroke-width', 2).raise()
-    })
-    .on('mouseout', function () {
-      tooltipDiv.transition().duration(200).style('opacity', 0)
-      d3.select(this).attr('stroke-width', 0)
-    })
+    // svg
+    //   .append('path')
+    //   .attr('pointer-events', 'none')
+    //   .attr('fill', 'none')
+    //   .attr('stroke', '#aaa')
+    //   .attr('stroke-width', 0.5)
+    //   .attr('d', path(districtMesh))
 
-  metricSelect
-    .selectAll('option')
-    .data(metricOptionList)
-    .join('option')
-    .attr('value', d => d)
-    .text(d => d)
-
-  metricSelect.on('change', function (e, d) {
-    metric = this.value
-
-    districts.attr('fill', d => {
-      const code = d.properties.censuscode
-
-      if (censusDataObj[code]) {
-        return colorScales[metric](censusDataObj[code][metric])
-      } else {
-        return 'gray'
-      }
-    })
+    svg
+      .append('path')
+      .attr('pointer-events', 'none')
+      .attr('fill', 'none')
+      .attr('stroke', '#333')
+      .attr('stroke-width', 1)
+      .attr('d', path(stateMesh))
   })
-
-  // svg
-  //   .append('path')
-  //   .attr('pointer-events', 'none')
-  //   .attr('fill', 'none')
-  //   .attr('stroke', '#aaa')
-  //   .attr('stroke-width', 0.5)
-  //   .attr('d', path(districtMesh))
-
-  svg
-    .append('path')
-    .attr('pointer-events', 'none')
-    .attr('fill', 'none')
-    .attr('stroke', '#333')
-    .attr('stroke-width', 1)
-    .attr('d', path(stateMesh))
-})
+  .catch(err => {
+    loadingIndicator.html(`${err}`)
+  })
