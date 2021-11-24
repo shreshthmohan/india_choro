@@ -26,3 +26,5 @@ Compare performance of the following:
 2. Shapes described by TopoJSON, converted to geojson and then rendered by d3
 
 GeoJSON file is considerably larger, so sticking to TopoJSON. Should consider reducing details from TopoJSON, that can make the file even smaller
+
+Current state of the application live at https://cranky-mcnulty-8bb407.netlify.app/
