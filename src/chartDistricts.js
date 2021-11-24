@@ -46,12 +46,10 @@ Promise.all([
   chartContainer.style('position', 'relative')
   const tooltipDiv = chartContainer
     .append('div')
-
     .attr(
       'style',
-      'position: absolute; opacity: 0; top: 0; right: 0; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white',
+      'position: absolute; opacity: 0; top: 8px; right: 8px; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white; text-transform: capitalize',
     )
-    .lower()
 
   const marginTop = 0
   const marginRight = 0
