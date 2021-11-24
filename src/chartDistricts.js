@@ -27,6 +27,29 @@ const loadingIndicator = d3
   .append('div')
   .html('Loading data...')
 
+const overlay = d3.select('#overlay-content-box')
+const overlayWrapper = d3.select('#overlay-wrapper')
+
+d3.select('#close-overlay').on('click', function () {
+  overlay.style('display', 'none')
+  overlayWrapper.style('display', 'none')
+})
+
+d3.select(document)
+  .on('click', e => {
+    console.log(e.target.id)
+    if (e.target.id === 'overlay-wrapper') {
+      overlay.style('display', 'none')
+      overlayWrapper.style('display', 'none')
+    }
+  })
+  .on('keydown', e => {
+    if (e.which === 27) {
+      overlay.style('display', 'none')
+      overlayWrapper.style('display', 'none')
+    }
+  })
+
 Promise.all([
   d3.csv(dataPath),
   d3.json(districtsTopoJSON),
@@ -52,7 +75,7 @@ Promise.all([
       .append('div')
       .attr(
         'style',
-        'position: absolute;  top: 8px; right: 8px; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white; text-transform: capitalize',
+        'position: absolute; font-size: 12px; top: 8px; right: 8px; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white; text-transform: capitalize',
       )
       .html('Hover on a district to see its data')
 
@@ -81,6 +104,14 @@ Promise.all([
     const widgetsLeft = widgets
       .append('div')
       .attr('style', 'display: flex; align-items: end; column-gap: 5px;')
+
+    const showDetailsButton = widgetsLeft
+      .append('button')
+      .text('Show Details')
+      .on('click', () => {
+        overlay.style('display', 'block')
+        overlayWrapper.style('display', 'block')
+      })
 
     const svg = chartContainer
       .append('svg')
@@ -181,6 +212,13 @@ Promise.all([
         .domain(d3.extent(metricValues['Workers_percentage'])),
     }
 
+    const descriptions = {
+      'default': 'Description not provided',
+      'sex ratio':
+        'Number of females per 1000 female. White represents 1000, i.e. a balanced sex ratio.',
+      'Population': 'population description',
+    }
+
     // const metricOptionList = [{metric:'sex_ratio', colorScheme}, {metric:'literacy'}, {metric:'Population'}]
     let metric = metricOptionList[0]
 
@@ -265,6 +303,10 @@ Promise.all([
       .join('option')
       .attr('value', d => d)
       .text(d => d)
+    overlay.select('p').html(descriptions[metric])
+
+    overlay.style('display', 'block')
+    overlayWrapper.style('display', 'block')
 
     metricSelect.on('change', function (e, d) {
       metric = this.value
@@ -278,6 +320,13 @@ Promise.all([
           return 'gray'
         }
       })
+
+      if (descriptions[metric]) {
+        overlay.select('p').html(descriptions[metric])
+
+        overlay.style('display', 'block')
+        overlayWrapper.style('display', 'block')
+      }
     })
 
     // svg
