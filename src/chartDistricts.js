@@ -42,19 +42,46 @@ Promise.all([
   const svgWidth = 630
   const svgHeight = 700
 
-  const tooltipDiv = d3
-    .select('body')
+  const chartContainer = d3.select('#chart-container')
+  chartContainer.style('position', 'relative')
+  const tooltipDiv = chartContainer
     .append('div')
+
     .attr(
-      'class',
-      'dom-tooltip absolute text-center bg-white rounded px-2 py-1 text-xs border capitalize',
+      'style',
+      'position: absolute; opacity: 0; top: 0; right: 0; padding: 8px 10px; border: 1px solid #777; border-radius: 4px; background: white',
     )
-    .style('opacity', 0)
-    .html('.')
     .lower()
 
-  const svg = d3.select('#chart-container').append('svg')
-  svg.attr('width', svgWidth).attr('height', svgHeight)
+  const marginTop = 0
+  const marginRight = 0
+  const marginBottom = 0
+  const marginLeft = 0
+
+  const aspectRatio = 9 / 10
+
+  const coreChartWidth = 1000
+
+  const coreChartHeight = coreChartWidth / aspectRatio
+
+  const viewBoxHeight = coreChartHeight + marginTop + marginBottom
+  const viewBoxWidth = coreChartWidth + marginLeft + marginRight
+
+  // .style('background', bgColor)
+
+  const widgets = chartContainer
+    .append('div')
+    .attr(
+      'style',
+      'display: flex; justify-content: space-between; padding-bottom: 1rem;',
+    )
+  const widgetsLeft = widgets
+    .append('div')
+    .attr('style', 'display: flex; align-items: end; column-gap: 5px;')
+
+  const svg = chartContainer
+    .append('svg')
+    .attr('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`)
 
   const metricOptionList = [
     'sex ratio',
@@ -148,13 +175,16 @@ Promise.all([
 
     'Workers_percentage': d3
       .scaleSequential(d3.interpolateBuGn)
-      .domain(d3.extent(metricValues['Religion_Not_Stated_percentage'])),
+      .domain(d3.extent(metricValues['Workers_percentage'])),
   }
 
   // const metricOptionList = [{metric:'sex_ratio', colorScheme}, {metric:'literacy'}, {metric:'Population'}]
   let metric = metricOptionList[0]
 
-  const metricSelect = d3.select('body').append('select').lower()
+  const metricSelect = widgetsLeft
+    .append('select')
+    // .attr('style', 'font-size: 20px')
+    .lower()
 
   const districtMesh = topojson.mesh(
     districtsShapeData,
@@ -175,7 +205,9 @@ Promise.all([
     .geoPath()
     // use fitSize to scale, transform shapes to take up the whole available space inside svg
     .projection(
-      d3.geoMercator().fitSize([svgWidth, svgHeight], districtsShapeGeo),
+      d3
+        .geoMercator()
+        .fitSize([viewBoxWidth, viewBoxHeight], districtsShapeGeo),
     )
 
   // const statesShapeGeo = topojson.feature(
@@ -203,19 +235,20 @@ Promise.all([
         return 'gray'
       }
     })
-    .on('mouseover', (e, d) => {
+    .on('mouseover', function (e, d) {
       const { DISTRICT, censuscode, ST_NM } = d.properties
 
       const { [metric]: m, 'District name': district } =
         censusDataObj[censuscode]
       tooltipDiv.transition().duration(200).style('opacity', 1)
-      tooltipDiv.html(
-        `(${censuscode}) ${district}/${DISTRICT}, ${ST_NM}: ${metric}: ${m}`,
-      )
+      // ${district}/
+      tooltipDiv.html(`${DISTRICT}, ${ST_NM} <br/> ${metric}: ${m}`)
+
+      d3.select(this).attr('stroke', '#333').attr('stroke-width', 2).raise()
     })
-    .on('mouseout', () => {
+    .on('mouseout', function () {
       tooltipDiv.transition().duration(200).style('opacity', 0)
-      tooltipDiv.html('.')
+      d3.select(this).attr('stroke-width', 0)
     })
 
   metricSelect
