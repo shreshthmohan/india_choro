@@ -269,6 +269,14 @@ Promise.all([d3.csv(dataPath), d3.json(districtsTopoJSON)])
       // all boundaries will be show if you don't provide a filter function
     )
 
+    const onlyOneStateGeo = {
+      type: districtsShapeGeo.type,
+      features: districtsShapeGeo.features.filter(
+        // f => f.properties.ST_NM === 'Andhra Pradesh',
+        f => f.properties.ST_NM === 'Chhattisgarh',
+      ),
+    }
+
     const path = d3
       .geoPath()
       // use fitSize to scale, transform shapes to take up the whole available space inside svg
@@ -276,13 +284,18 @@ Promise.all([d3.csv(dataPath), d3.json(districtsTopoJSON)])
         d3
           // projection: mercator
           .geoMercator()
-          .fitSize([viewBoxWidth, viewBoxHeight], districtsShapeGeo),
+          .fitSize([viewBoxWidth, viewBoxHeight], onlyOneStateGeo),
+        // .fitSize([viewBoxWidth, viewBoxHeight], districtsShapeGeo),
       )
+
+    console.log('length:', Object.keys(districtsShapeGeo))
+    console.log('type:', districtsShapeGeo.type)
+    console.log('feature:', districtsShapeGeo.features[0])
 
     const districts = svg
       .append('g')
       .selectAll('path')
-      .data(districtsShapeGeo.features)
+      .data(onlyOneStateGeo.features)
       .join('path')
       .attr('d', path)
       // fill color inside district shape
