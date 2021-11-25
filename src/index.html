@@ -14,6 +14,16 @@
     "
   >
     <style>
+      #chart-container {
+        background-color: white;
+      }
+      body {
+        background-image: linear-gradient(
+          rgb(255, 169, 111),
+          white,
+          rgb(109, 241, 109)
+        );
+      }
       #overlay-wrapper {
         position: fixed;
         top: 0;
@@ -27,14 +37,14 @@
 
       #overlay-content-box {
         width: 80%;
-        max-width: 330px;
+        max-width: 830px;
         max-height: 80%;
         position: relative;
         /* left: 10%; */
         /* top: 25%; */
         margin-left: auto;
         margin-right: auto;
-        margin-top: 25%;
+        margin-top: 20%;
         /* margin-bottom: auto; */
         overflow-y: auto;
         z-index: 11;
@@ -44,6 +54,73 @@
         border-radius: 10px;
         box-sizing: border-box;
         display: none;
+      }
+
+      @media only screen and (max-width: 700px) {
+        #overlay-content-box {
+          width: 80%;
+          max-width: 830px;
+          max-height: 80%;
+          position: relative;
+          /* left: 10%; */
+          /* top: 25%; */
+          margin-left: auto;
+          margin-right: auto;
+          margin-top: 50%;
+          /* margin-bottom: auto; */
+          overflow-y: auto;
+          z-index: 11;
+          color: white;
+          background-color: rgba(0, 0, 0, 0.75);
+          padding: 20px;
+          border-radius: 10px;
+          box-sizing: border-box;
+          display: none;
+        }
+      }
+      @media only screen and (max-width: 500px) {
+        #overlay-content-box {
+          width: 80%;
+          max-width: 830px;
+          max-height: 80%;
+          position: relative;
+          /* left: 10%; */
+          /* top: 25%; */
+          margin-left: auto;
+          margin-right: auto;
+          margin-top: 30%;
+          /* margin-bottom: auto; */
+          overflow-y: auto;
+          z-index: 11;
+          color: white;
+          background-color: rgba(0, 0, 0, 0.75);
+          padding: 20px;
+          border-radius: 10px;
+          box-sizing: border-box;
+          display: none;
+        }
+      }
+      @media only screen and (max-width: 1200px) {
+        #overlay-content-box {
+          width: 80%;
+          max-width: 830px;
+          max-height: 80%;
+          position: relative;
+          /* left: 10%; */
+          /* top: 25%; */
+          margin-left: auto;
+          margin-right: auto;
+          margin-top: 25%;
+          /* margin-bottom: auto; */
+          overflow-y: auto;
+          z-index: 11;
+          color: white;
+          background-color: rgba(0, 0, 0, 0.75);
+          padding: 20px;
+          border-radius: 10px;
+          box-sizing: border-box;
+          display: none;
+        }
       }
     </style>
     <div id="overlay-wrapper">
