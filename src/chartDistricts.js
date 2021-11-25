@@ -37,7 +37,6 @@ d3.select('#close-overlay').on('click', function () {
 
 d3.select(document)
   .on('click', e => {
-    console.log(e.target.id)
     if (e.target.id === 'overlay-wrapper') {
       overlay.style('display', 'none')
       overlayWrapper.style('display', 'none')
@@ -298,14 +297,6 @@ Promise.all([d3.csv(dataPath), d3.json(districtsTopoJSON)])
       // all boundaries will be show if you don't provide a filter function
     )
 
-    const onlyOneStateGeo = {
-      type: districtsShapeGeo.type,
-      features: districtsShapeGeo.features.filter(
-        // f => f.properties.ST_NM === 'Andhra Pradesh',
-        f => f.properties.ST_NM === 'Chhattisgarh',
-      ),
-    }
-
     const path = d3
       .geoPath()
       // use fitSize to scale, transform shapes to take up the whole available space inside svg
@@ -313,58 +304,9 @@ Promise.all([d3.csv(dataPath), d3.json(districtsTopoJSON)])
         d3
           // projection: mercator
           .geoMercator()
-          .fitSize([viewBoxWidth, viewBoxHeight], onlyOneStateGeo),
-        // .fitSize([viewBoxWidth, viewBoxHeight], districtsShapeGeo),
+          // .fitSize([viewBoxWidth, viewBoxHeight], onlyOneStateGeo),
+          .fitSize([viewBoxWidth, viewBoxHeight], districtsShapeGeo),
       )
-
-    console.log('length:', Object.keys(districtsShapeGeo))
-    console.log('type:', districtsShapeGeo.type)
-    console.log('feature:', districtsShapeGeo.features[0])
-
-    const districts = svg
-      .append('g')
-      .selectAll('path')
-      .data(onlyOneStateGeo.features)
-      .join('path')
-      .attr('d', path)
-      // fill color inside district shape
-      .attr('fill', d => {
-        const code = d.properties.censuscode
-
-        if (censusDataObj[code]) {
-          return colorScales[metric](censusDataObj[code][metric])
-        } else {
-          return 'gray'
-        }
-      })
-      .on('mouseover', function (e, d) {
-        const { DISTRICT, censuscode, ST_NM } = d.properties
-
-        tooltipDiv.transition().duration(200).style('opacity', 1)
-        if (censusDataObj[censuscode]) {
-          const { [metric]: m, 'District name': district } =
-            censusDataObj[censuscode]
-          // ${district}/
-          tooltipDiv.html(
-            `${DISTRICT}, ${ST_NM} <br/> ${metric}: ${d3.format(
-              formats[metric],
-            )(m)}`,
-          )
-        } else {
-          tooltipDiv.html(`${DISTRICT} <br/> No data available.`)
-        }
-
-        // Outline
-        // Raise so that outline is not hidden behind neighbouring shapes
-        d3.select(this).attr('stroke', '#333').attr('stroke-width', 2).raise()
-      })
-      .on('mouseout', function () {
-        // hide tooltip
-        tooltipDiv.transition().duration(200).style('opacity', 0)
-
-        // remove outline
-        d3.select(this).attr('stroke-width', 0)
-      })
 
     // add <option>s to the <select> tag based on items in metricOptionList array
     metricSelect
@@ -383,35 +325,138 @@ Promise.all([d3.csv(dataPath), d3.json(districtsTopoJSON)])
     overlayWrapper.style('display', 'block')
 
     // when you select a different <option>
-    metricSelect.on('change', function (e, d) {
-      metric = this.value
 
-      districts.attr('fill', d => {
-        const code = d.properties.censuscode
+    const allStatesObj = {}
+    districtsShapeGeo.features.forEach(f => {
+      allStatesObj[f.properties.ST_NM] = 1
+    })
 
-        if (censusDataObj[code]) {
-          return colorScales[metric](censusDataObj[code][metric])
-        } else {
-          return 'gray'
+    const allStates = ['All', ...Object.keys(allStatesObj)]
+
+    const stateSelect = widgetsLeft
+      .append('select')
+      // .attr('style', 'font-size: 20px')
+      .lower()
+
+    let selectedState = allStates[0]
+
+    stateSelect
+      .selectAll('option')
+      .data(allStates)
+      .join('option')
+      .attr('value', d => d)
+      .text(d => d)
+
+    stateSelect.on('change', function (e, d) {
+      selectedState = this.value
+      renderStateShape(selectedState)
+    })
+
+    // First call is with All to displat All districts
+    renderStateShape('All')
+
+    function renderStateShape(selectedState) {
+      d3.select('#all-districts').remove()
+      d3.select('#state-mesh').remove()
+
+      const onlyOneStateGeo =
+        selectedState === 'All'
+          ? districtsShapeGeo
+          : {
+              type: districtsShapeGeo.type,
+              features: districtsShapeGeo.features.filter(
+                f => f.properties.ST_NM === selectedState,
+              ),
+            }
+
+      const pathS = d3
+        .geoPath()
+        // use fitSize to scale, transform shapes to take up the whole available space inside svg
+        .projection(
+          d3
+            // projection: mercator
+            .geoMercator()
+            .fitSize([viewBoxWidth, viewBoxHeight], onlyOneStateGeo),
+        )
+
+      const districts = svg
+        .append('g')
+        .attr('id', 'all-districts')
+        .selectAll('path')
+        // .data(onlyOneStateGeo.features)
+        .data(onlyOneStateGeo.features)
+        .join('path')
+        .attr('d', pathS)
+        // fill color inside district shape
+        .attr('fill', d => {
+          const code = d.properties.censuscode
+
+          if (censusDataObj[code]) {
+            return colorScales[metric](censusDataObj[code][metric])
+          } else {
+            return 'gray'
+          }
+        })
+        .on('mouseover', function (e, d) {
+          const { DISTRICT, censuscode, ST_NM } = d.properties
+
+          tooltipDiv.transition().duration(200).style('opacity', 1)
+          if (censusDataObj[censuscode]) {
+            const { [metric]: m, 'District name': district } =
+              censusDataObj[censuscode]
+            // ${district}/
+            tooltipDiv.html(
+              `${DISTRICT}, ${ST_NM} <br/> ${metric}: ${d3.format(
+                formats[metric],
+              )(m)}`,
+            )
+          } else {
+            tooltipDiv.html(`${DISTRICT} <br/> No data available.`)
+          }
+
+          // Outline
+          // Raise so that outline is not hidden behind neighbouring shapes
+          d3.select(this).attr('stroke', '#333').attr('stroke-width', 2).raise()
+        })
+        .on('mouseout', function () {
+          // hide tooltip
+          tooltipDiv.transition().duration(200).style('opacity', 0)
+
+          // remove outline
+          d3.select(this).attr('stroke-width', 0)
+        })
+
+      metricSelect.on('change', function (e, d) {
+        metric = this.value
+
+        districts.attr('fill', d => {
+          const code = d.properties.censuscode
+
+          if (censusDataObj[code]) {
+            return colorScales[metric](censusDataObj[code][metric])
+          } else {
+            return 'gray'
+          }
+        })
+
+        // show description for metric only if it exists in descriptions object
+        if (descriptions[metric]) {
+          overlay.select('p').html(descriptions[metric])
+
+          overlay.style('display', 'block')
+          overlayWrapper.style('display', 'block')
         }
       })
 
-      // show description for metric only if it exists in descriptions object
-      if (descriptions[metric]) {
-        overlay.select('p').html(descriptions[metric])
-
-        overlay.style('display', 'block')
-        overlayWrapper.style('display', 'block')
-      }
-    })
-
-    svg
-      .append('path')
-      .attr('pointer-events', 'none')
-      .attr('fill', 'none')
-      .attr('stroke', '#333')
-      .attr('stroke-width', 1)
-      .attr('d', path(stateMesh))
+      svg
+        .append('path')
+        .attr('id', 'state-mesh')
+        .attr('pointer-events', 'none')
+        .attr('fill', 'none')
+        .attr('stroke', '#333')
+        .attr('stroke-width', 1)
+        .attr('d', pathS(stateMesh))
+    }
   })
   .catch(err => {
     loadingIndicator.html(`${err}`)
